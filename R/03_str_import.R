@@ -1,23 +1,20 @@
 #### IMPORT STR DATA ###########################################################
 
 source("R/01_startup.R")
+qload("output/data/geometry.qsm")
 
-
-# Load old data -----------------------------------------------------------
-
-# TKTK
-
-# Add new property file ---------------------------------------------------
+# Add property file -------------------------------------------------------
 
 property <- 
-  read_csv("data/property.csv") |> 
+  read_csv("data/property.csv", show_col_types = FALSE) |> 
   select(property_ID = `Property ID`, listing_title = `Listing Title`, 
          property_type = `Property Type`, listing_type = `Listing Type`,
          created = `Created Date`, scraped = `Last Scraped Date`, 
          latitude = `Latitude`, longitude = `Longitude`, bedrooms = `Bedrooms`,
          city = `City`, ab_property = `Airbnb Property ID`, 
          ab_host = `Airbnb Host ID`, ha_property = `HomeAway Property ID`, 
-         ha_host = `HomeAway Property Manager ID`) |> 
+         ha_host = `HomeAway Property Manager ID`,
+         img_url = `Listing Main Image URL`) |> 
   mutate(property_ID = str_replace(property_ID, "abnb_", "ab-"),
          property_ID = str_replace(property_ID, "vrbo_", "ha-")) |>
   mutate(host_ID = coalesce(as.character(ab_host), ha_host),
@@ -28,16 +25,41 @@ property <-
     "studio"), TRUE, housing))
 
 
+# Do raffle and add wards -------------------------------------------------
+
+property <- 
+  property |> 
+  strr_as_sf(32617) |> 
+  # Remove extremely distant outliers
+  # st_intersection(st_buffer(city, 1000)) |> 
+  strr_raffle(DA, GeoUID, dwellings)
+
+# Save progress
+qsave(property, file = "output/data/property.qs", nthreads = availableCores())
+
+property <-
+  property |> 
+  mutate(ward = WD$ward[st_nearest_feature(property, WD)], 
+         .before = geometry) |> 
+  rename(DA = GeoUID)
+
+property <- 
+  property |> 
+  select(-.grid_ID, -DA) |> 
+  rename(DA = GeoUID_new)
+
+
 # Add monthly file --------------------------------------------------------
 
 monthly_all <- 
-  read_csv("data/monthly.csv") |> 
+  read_csv("data/monthly.csv", show_col_types = FALSE) |> 
   select(property_ID = `Property ID`, month = `Reporting Month`,
          rev = `Revenue (Native)`, r = `Reservation Days`,
          a = `Available Days`, b = `Blocked Days`) |> 
   mutate(property_ID = str_replace(property_ID, "abnb_", "ab-"),
          property_ID = str_replace(property_ID, "vrbo_", "ha-"),
-         month = tsibble::yearmonth(month))
+         month = tsibble::yearmonth(month)) |> 
+  filter(month <= yearmonth("2023-05"))
 
 
 # Process monthly ---------------------------------------------------------
@@ -51,7 +73,7 @@ monthly <-
 # Start by removing all months that are < created, > scraped, or 0 days
 monthly <- 
   monthly |> 
-  left_join(select(property, property_ID, created, scraped), 
+  left_join(select(st_drop_geometry(property), property_ID, created, scraped), 
             by = "property_ID") |> 
   filter(month >= yearmonth(created), month <= yearmonth(scraped),
          r + a + b > 0)
@@ -125,10 +147,10 @@ monthly <-
 
 monthly <- 
   monthly |> 
-  left_join(select(property, property_ID, host_ID, listing_type, city),
-            by = "property_ID") |> 
+  left_join(select(st_drop_geometry(property), property_ID, host_ID, 
+                   listing_type, DA, ward), by = "property_ID") |> 
   transmute(property_ID, month, R = r, A = a, B = b, revenue = rev, host_ID, 
-            listing_type, city)
+            listing_type, DA, ward)
 
 
 # Calculate multilistings -------------------------------------------------
