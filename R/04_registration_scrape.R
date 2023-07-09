@@ -22,7 +22,7 @@ PIDs <-
 
 # Prepare the tibble ------------------------------------------------------
 
-# airbnb_licenses <- qread("output/airbnb_licenses.qs")
+# airbnb_licenses <- qread("output/data/airbnb_licenses.qs")
 airbnb_licenses <-
   tibble(property_ID = PIDs,
          license = character(length(PIDs)),
@@ -61,10 +61,17 @@ for (i in seq_along(airbnb_licenses$property_ID)) {
     str_split(":") |> 
     pluck(1)
   
-  pg <- tryCatch(GET(paste0("https://www.airbnb.ca/rooms/", 
-                            airbnb_licenses$property_ID[[i]]),
-                     use_proxy(proxy[1], as.numeric(proxy[2]), proxy[3], 
-                               proxy[4])), error = function(e) NULL)
+  pg <- tryCatch(
+    GET(paste0("https://www.airbnb.ca/rooms/", 
+               airbnb_licenses$property_ID[[i]]),
+        use_proxy(proxy[1], as.numeric(proxy[2]), proxy[3], proxy[4])), 
+    error = function(e) {
+      Sys.sleep(2)
+      tryCatch(
+        GET(paste0("https://www.airbnb.ca/rooms/", 
+                   airbnb_licenses$property_ID[[i]]),
+            use_proxy(proxy[1], as.numeric(proxy[2]), proxy[3], proxy[4])), 
+        error = function(e) NULL)})
 
   if (is.null(pg)) {
     airbnb_licenses$double_check[[i]] <- FALSE
@@ -96,7 +103,7 @@ for (i in seq_along(airbnb_licenses$property_ID)) {
   airbnb_licenses$exempt[[i]] <- desc == "Exempt"
 
   # Save the dataframe every iteration
-  qs::qsave(airbnb_licenses, "output/airbnb_licenses.qs")
+  qs::qsave(airbnb_licenses, "output/data/airbnb_licenses.qs")
 }
 
 rm(pg, PIDs)
@@ -105,23 +112,10 @@ rm(pg, PIDs)
 # Extract license and join to property file -------------------------------
 
 airbnb_licenses <- qread("output/airbnb_licenses.qs")
-airbnb_licenses4 <- qread("output/airbnb_licenses4.qs")
 
 airbnb_licenses <-
-  airbnb_licenses4 |> 
-  mutate(property_ID = paste0("ab-", property_ID),
-         exempt = if_else(exists, exempt, NA)) |> 
-  rename(license_4 = description,
-         exempt_4 = exempt) |> 
-  left_join(
-    airbnb_licenses |>
-      mutate(property_ID = paste0("ab-", property_ID),
-             license_1 = str_extract(description, "HSR\\d{2}- *\\d*"),
-             exempt_1 = str_detect(description, "Exempt: This listing")) |> 
-      select(property_ID, license_1, exempt_1),
-    by = "property_ID") |> 
-  mutate(license = coalesce(license_4, license_1),
-         exempt = coalesce(exempt_4, exempt_1)) |>
+  airbnb_licenses |> 
+  mutate(property_ID = paste0("ab-", property_ID)) |> 
   select(property_ID, exists, license, exempt)
 
 property <- 
@@ -129,23 +123,24 @@ property <-
   select(-any_of(c("exists", "license", "exempt", "reg_status", "type",
                    "address"))) |> 
   left_join(airbnb_licenses, by = "property_ID") |> 
-  mutate(license = str_remove_all(license, " ")) |> 
   relocate(geometry, .after = last_col())
 
 
 # Import City registration data -------------------------------------------
 
-reg_city <- 
-  readxl::read_xlsx("data/PRA_091822.xlsx") |> 
-  set_names(c("reg_number", "type", "address", "unit_number", "reg_name"))
+reg_city <-
+  read_csv("data/short-term-rental-registrations-data.csv") |> 
+  select(-`_id`, -ward_number) |> 
+  set_names(c("license", "reg_postal", "reg_ward"))
 
 
 # Merge City data with scrape results -------------------------------------
 
 property <- 
   property |> 
-  left_join(select(reg_city, reg_number, type, address),
-            by = c("license" = "reg_number"))
+  left_join(reg_city, by = "license") |> 
+  relocate(geometry, .after = last_col())
+
 
 property <-
   property |> 
@@ -165,6 +160,6 @@ property <-
 
 # Save output -------------------------------------------------------------
 
-qsave(property, file = "output/property.qs", nthreads = availableCores())
-qsave(reg_city, file = "output/reg_city.qs")
-rm(airbnb_licenses, airbnb_licenses4)
+qsave(property, file = "output/data/property.qs", nthreads = availableCores())
+qsave(reg_city, file = "output/data/reg_city.qs")
+rm(airbnb_licenses)

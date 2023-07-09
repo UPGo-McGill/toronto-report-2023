@@ -11,8 +11,9 @@ property <-
          property_type = `Property Type`, listing_type = `Listing Type`,
          created = `Created Date`, scraped = `Last Scraped Date`, 
          latitude = `Latitude`, longitude = `Longitude`, bedrooms = `Bedrooms`,
-         city = `City`, ab_property = `Airbnb Property ID`, 
-         ab_host = `Airbnb Host ID`, ha_property = `HomeAway Property ID`, 
+         city = `City`, minimum_stay = "Minimum Stay", 
+         ab_property = `Airbnb Property ID`, ab_host = `Airbnb Host ID`, 
+         ha_property = `HomeAway Property ID`, 
          ha_host = `HomeAway Property Manager ID`,
          img_url = `Listing Main Image URL`) |> 
   mutate(property_ID = str_replace(property_ID, "abnb_", "ab-"),
@@ -192,6 +193,31 @@ monthly <-
   relocate(multi, .after = listing_type) |> 
   relocate(property_ID, month) |> 
   relocate(host_ID, .after = revenue)
+
+
+
+# Minimum stay ------------------------------------------------------------
+
+min_stay_remote <- tbl(.con, "min_stay")
+
+min_stay <- 
+  min_stay_remote |> 
+  filter(property_ID %in% !!property$property_ID) |> 
+  collect() |> 
+  arrange(property_ID, start_date)
+
+qsave(min_stay, file = "output/data/min_stay.qs",
+      nthreads = future::availableCores())
+
+rm(min_stay_remote)
+
+min_stay <- qread("output/data/min_stay.qs")
+
+min_stay
+
+property |> 
+  select(property_ID, start_date = scraped, minimum_stay)
+
 
 
 # Save output -------------------------------------------------------------
