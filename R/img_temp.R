@@ -1,7 +1,9 @@
 ### IMG TEMP
 
 library(matchr)
-handlers(global = TRUE)
+progressr::handlers(global = TRUE)
+library(future)
+plan(multisession)
 
 cl_paths <- list.files("/Volumes/Data 2/Scrape photos/toronto/cl", 
                        full.names = TRUE)
@@ -12,7 +14,7 @@ kj_paths <- list.files("/Volumes/Data 2/Scrape photos/toronto/kj",
 # Get signatures ----------------------------------------------------------
 
 cl_sigs <- create_signature(cl_paths)
-kj_sigs <- create_signature(kj_paths)
+qsave(cl_sigs, file = "cl_sigs.qs", nthreads = availableCores())
 
-qsavem(cl_sigs, kj_sigs, file = "output/img_sigs.qsm",
-       nthreads = availableCores())
+kj_sigs <- create_signature(kj_paths)
+qsave(kj_sigs, file = "kj_sigs.qs", nthreads = availableCores())
