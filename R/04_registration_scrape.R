@@ -95,6 +95,15 @@ for (i in seq_along(airbnb_licenses$property_ID)) {
         html_text2() |> 
         str_extract("Exempt")
     }
+    if (is.na(desc)) {
+      desc <- 
+        pg |> 
+        read_html() |> 
+        html_element("body") |> 
+        html_element("#data-state") |> 
+        html_text2() |> 
+        str_extract("Approved by government")
+    }
   } else stop(paste0("STATUS CODE ", pg$status_code, "; PROXY ", proxy[1]))
 
   # Add rows to the output df
@@ -106,7 +115,7 @@ for (i in seq_along(airbnb_licenses$property_ID)) {
   qs::qsave(airbnb_licenses, "output/data/airbnb_licenses.qs")
 }
 
-rm(pg, PIDs)
+rm(pg, PIDs, desc, i, proxy, proxy_list)
 
 
 # Extract license and join to property file -------------------------------
@@ -138,28 +147,78 @@ reg_city <-
 
 property <- 
   property |> 
+  select(-any_of(c("reg_postal", "reg_ward"))) |> 
   left_join(reg_city, by = "license") |> 
   relocate(geometry, .after = last_col())
 
 
-property <-
+# Double check strange results --------------------------------------------
+
+property <- 
+  property |>
+  arrange(property_ID) |> 
+  mutate(minimum_stay = case_when(
+    property_ID == "ab-6644497" ~ 366,
+    property_ID == "ab-6748289" ~ 366,
+    property_ID == "ab-19811629" ~ 366,
+    property_ID == "ab-22363032" ~ 500,
+    property_ID == "ab-17220189" ~ 1000,
+    property_ID == "ab-7253069" ~ 1000,
+    property_ID == "ab-6603272" ~ 1124,
+    property_ID == "ab-8001458" ~ 1125,
+    .default = minimum_stay))
+
+# Find listings which are actually not in Toronto
+at_border <- 
   property |> 
-  mutate(reg_status = case_when(
-    is.na(exists) | !exists ~ NA_character_,
-    minimum_stay >= 30 ~ "LTR",
-    exempt ~ "EXEMPT",
-    is.na(license) ~ "MISSING",
-    !is.na(license) & is.na(type) ~ "FAKE/EXPIRED",
-    !is.na(license) & type == "extended" ~ "VALID_EXT",
-    !is.na(license) & type == "regular" ~ "VALID_REG"), .before = geometry)
+  filter(is.na(license) & minimum_stay < 28 & exists) |> 
+  st_filter(st_buffer(st_cast(city, "MULTILINESTRING"), 200)) |> 
+  pull(property_ID)
+
+at_border <- 
+  property |> 
+  filter(is.na(license) & minimum_stay < 28 & exists) |> 
+  filter(!property_ID %in% at_border, !listing_type == "Hotel room") |> 
+  st_filter(city, .predicate = st_disjoint) |> 
+  pull(property_ID) |> 
+  c(at_border)
 
 property <- 
   property |> 
-  relocate(reg_status, type, address, .before = geometry)
+  filter(!property_ID %in% at_border)
+
+property |> 
+  filter(!is.na(license)) |> 
+  select(property_ID, license:reg_ward)
+
+property <-
+  property |> 
+  mutate(license = if_else(exempt, NA_character_, license)) |> 
+  mutate(reg_status = case_when(
+    is.na(exists) | !exists ~ NA_character_,
+    exempt & minimum_stay >= 30 ~ "LTR EXEMPT",
+    exempt & !housing ~ "NON-HOUSING EXEMPT",
+    exempt ~ "OTHER EXEMPT",
+    listing_type == "Hotel room" | str_detect(property_type, "otel") ~ "HOTEL",
+    minimum_stay >= 30 ~ "LTR",
+    is.na(license) & minimum_stay >= 28 ~ "MISSING 28",
+    is.na(license) ~ "MISSING STR",
+    !is.na(license) & is.na(reg_postal) ~ "INVALID",
+    !is.na(license) ~ "VALID",
+    .default = "TKTK"), .before = geometry)
+  
+
+# Harmonize monthly with property -----------------------------------------
+
+monthly <- 
+  monthly |> 
+  filter(property_ID %in% property$property_ID)
 
 
 # Save output -------------------------------------------------------------
 
 qsave(property, file = "output/data/property.qs", nthreads = availableCores())
+qsave(monthly, file = "output/data/monthly.qs", nthreads = availableCores())
 qsave(reg_city, file = "output/data/reg_city.qs")
+
 rm(airbnb_licenses)

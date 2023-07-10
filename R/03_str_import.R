@@ -213,11 +213,35 @@ rm(min_stay_remote)
 
 min_stay <- qread("output/data/min_stay.qs")
 
-min_stay
+min_stay <-
+  property |> 
+  st_drop_geometry() |> 
+  select(property_ID, start_date = scraped, minimum_stay) |> 
+  mutate(start_date = min(as.Date("2023-05-31"), start_date)) |> 
+  bind_rows(min_stay) |> 
+  arrange(property_ID, start_date) |> 
+  distinct()
 
-property |> 
-  select(property_ID, start_date = scraped, minimum_stay)
+min_stay <- 
+  min_stay |> 
+  mutate(month = yearmonth(start_date)) |> 
+  filter(start_date == max(start_date), .by = c(property_ID, month)) |> 
+  select(property_ID, month, minimum_stay)
 
+min_stay_last <- 
+  min_stay |> 
+  filter(month == max(month), .by = property_ID) |> 
+  select(property_ID, min_2 = minimum_stay)
+
+monthly <- 
+  monthly |> 
+  left_join(min_stay, by = c("property_ID", "month")) |> 
+  group_by(property_ID) |> 
+  fill(minimum_stay, .direction = "downup") |> 
+  ungroup() |> 
+  left_join(min_stay_last, by = "property_ID") |> 
+  mutate(minimum_stay = coalesce(minimum_stay, min_2, 1)) |> 
+  select(-min_2)
 
 
 # Save output -------------------------------------------------------------
@@ -227,4 +251,4 @@ qsave(monthly, file = "output/data/monthly.qs", nthreads = availableCores())
 
 rm(created_change, host, monthly_all, monthly_host, multi, 
    scraped_change, col_names, EH, HR, join_cols, PR, SR, thresholds, 
-   thresholds_names)
+   thresholds_names, min_stay, min_stay_last)
