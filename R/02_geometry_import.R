@@ -56,6 +56,10 @@ WD <-
   st_as_sf() |> 
   st_set_agr("constant")
 
+WD <-
+  WD |> 
+  st_intersection(city$geometry)
+
 
 # Save output -------------------------------------------------------------
 

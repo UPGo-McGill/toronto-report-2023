@@ -148,10 +148,10 @@ monthly <-
 
 monthly <- 
   monthly |> 
-  left_join(select(st_drop_geometry(property), property_ID, host_ID, 
-                   listing_type, DA, ward), by = "property_ID") |> 
+  inner_join(select(st_drop_geometry(property), property_ID, host_ID, 
+                    listing_type, housing, DA, ward), by = "property_ID") |> 
   transmute(property_ID, month, R = r, A = a, B = b, revenue = rev, host_ID, 
-            listing_type, DA, ward)
+            listing_type, housing, DA, ward)
 
 
 # Calculate multilistings -------------------------------------------------
@@ -198,35 +198,275 @@ monthly <-
 
 # Minimum stay ------------------------------------------------------------
 
-min_stay_remote <- tbl(.con, "min_stay")
+min_2017 <- 
+  read_csv("data/prop_2017.zip") |> 
+  select(property_ID = `Property ID`, scraped = `Last Scraped Date`, 
+         minimum_stay = "Minimum Stay") |> 
+  mutate(property_ID = paste0("ab-", property_ID),
+         max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
 
-min_stay <- 
-  min_stay_remote |> 
-  filter(property_ID %in% !!property$property_ID) |> 
-  collect() |> 
-  arrange(property_ID, start_date)
+min_2018 <- 
+  read_csv("data/prop_2018.zip") |> 
+  select(property_ID = `Property ID`, scraped = `Last Scraped Date`, 
+         minimum_stay = "Minimum Stay") |> 
+  mutate(property_ID = paste0("ab-", property_ID),
+         max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
 
-qsave(min_stay, file = "output/data/min_stay.qs",
-      nthreads = future::availableCores())
+min_2019_04 <- 
+  qread("data/property_2019_04.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
 
-rm(min_stay_remote)
+min_2019_05 <- 
+  qread("data/property_2019_05.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
 
-min_stay <- qread("output/data/min_stay.qs")
+min_2019_06 <- 
+  qread("data/property_2019_06.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
 
-min_stay <-
+min_2019_07 <- 
+  qread("data/property_2019_07.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2019_08 <- 
+  qread("data/property_2019_08.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2019_09 <- 
+  qread("data/property_2019_09.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2019_10 <- 
+  qread("data/property_2019_10.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2019_11 <- 
+  qread("data/property_2019_11.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2019_12 <- 
+  qread("data/property_2019_12.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_01 <- 
+  qread("data/property_2020_01.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_02 <- 
+  qread("data/property_2020_02.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_03 <- 
+  qread("data/property_2020_03.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_04 <- 
+  qread("data/property_2020_04.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_05 <- 
+  qread("data/property_2020_05.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_06 <- 
+  qread("data/property_2020_06.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_07 <- 
+  qread("data/property_2020_07.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_08 <- 
+  qread("data/property_2020_08.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_09 <- 
+  qread("data/property_2020_09.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_10 <- 
+  qread("data/property_2020_10.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_11 <- 
+  qread("data/property_2020_11.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2020_12 <- 
+  qread("data/property_2020_12.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_01 <- 
+  qread("data/property_2021_01.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_02 <- 
+  qread("data/property_2021_02.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_03 <- 
+  qread("data/property_2021_03.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_04 <- 
+  qread("data/property_2021_04.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_05 <- 
+  qread("data/property_2021_05.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_06 <- 
+  qread("data/property_2021_06.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_07 <- 
+  qread("data/property_2021_07.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_08 <- 
+  qread("data/property_2021_08.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_09 <- 
+  qread("data/property_2021_09.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_11 <- 
+  qread("data/property_2021_11.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2021_12 <- 
+  qread("data/property_2021_12.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2022_01 <- 
+  qread("data/property_2022_01.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2022_02 <- 
+  qread("data/property_2022_02.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2022_03 <- 
+  qread("data/property_2022_03.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2022_04 <- 
+  qread("data/property_2022_04.qs", nthreads = 10) |> 
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  filter(property_ID %in% property$property_ID) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_2023_05 <- 
   property |> 
   st_drop_geometry() |> 
-  select(property_ID, start_date = scraped, minimum_stay) |> 
-  mutate(start_date = min(as.Date("2023-05-31"), start_date)) |> 
-  bind_rows(min_stay) |> 
-  arrange(property_ID, start_date) |> 
-  distinct()
+  mutate(max_date = max(scraped, na.rm = TRUE)) |> 
+  select(property_ID, start_date = scraped, max_date, minimum_stay)
+
+min_stay <- 
+  bind_rows(min_2017, min_2018, min_2019_04, min_2019_05, min_2019_06, 
+            min_2019_07, min_2019_08, min_2019_09, min_2019_10, min_2019_11,
+            min_2019_12, min_2020_01, min_2020_02, min_2020_03, min_2020_04, 
+            min_2020_05, min_2020_06, min_2020_07, min_2020_08, min_2020_09, 
+            min_2020_10, min_2020_11, min_2020_12, min_2021_01, min_2021_02, 
+            min_2021_03, min_2021_04, min_2021_05, min_2021_06, min_2021_07,
+            min_2021_08, min_2021_09, min_2021_11, min_2021_12, min_2022_01, 
+            min_2022_02, min_2022_03, min_2022_04, min_2023_05)
 
 min_stay <- 
   min_stay |> 
-  mutate(month = yearmonth(start_date)) |> 
-  filter(start_date == max(start_date), .by = c(property_ID, month)) |> 
-  select(property_ID, month, minimum_stay)
+  summarize(max_date = max(max_date), 
+            .by = c(property_ID, start_date, minimum_stay)) |> 
+  pivot_longer(c(start_date, max_date), values_to = "date") |> 
+  mutate(month = yearmonth(date)) |> 
+  arrange(property_ID, month) |> 
+  select(property_ID, month, minimum_stay, date) |> 
+  summarize(minimum_stay = first(minimum_stay[date == max(date)]),
+            .by = c(property_ID, month)) |> 
+  arrange(property_ID, month)
+
+min_stay <- 
+  min_stay |> 
+  filter(month < yearmonth("2023-06-01"))
+  
+qsave(min_stay, "output/data/min_stay.qs", nthreads = availableCores())
+
+min_stay <- qread("output/data/min_stay.qs")
 
 min_stay_last <- 
   min_stay |> 
@@ -235,7 +475,9 @@ min_stay_last <-
 
 monthly <- 
   monthly |> 
+  select(-any_of(c("minimum_stay"))) |> 
   left_join(min_stay, by = c("property_ID", "month")) |> 
+  relocate(minimum_stay, .after = revenue) |> 
   group_by(property_ID) |> 
   fill(minimum_stay, .direction = "downup") |> 
   ungroup() |> 
@@ -248,7 +490,16 @@ monthly <-
 
 qsave(property, file = "output/data/property.qs", nthreads = availableCores())
 qsave(monthly, file = "output/data/monthly.qs", nthreads = availableCores())
+qsave(monthly_all, file = "output/data/monthly_all.qs", 
+      nthreads = availableCores())
 
 rm(created_change, host, monthly_all, monthly_host, multi, 
    scraped_change, col_names, EH, HR, join_cols, PR, SR, thresholds, 
-   thresholds_names, min_stay, min_stay_last)
+   thresholds_names, min_stay, min_2017, min_2018, min_2019_04, min_2019_05, 
+   min_2019_06, min_2019_07, min_2019_08, min_2019_09, min_2019_10, min_2019_11,
+   min_2019_12, min_2020_01, min_2020_02, min_2020_03, min_2020_04, min_2020_05, 
+   min_2020_06, min_2020_07, min_2020_08, min_2020_09, min_2020_10, min_2020_11, 
+   min_2020_12, min_2021_01, min_2021_02, min_2021_03, min_2021_04, min_2021_05, 
+   min_2021_06, min_2021_07, min_2021_08, min_2021_09, min_2021_11, min_2021_12, 
+   min_2022_01, min_2022_02, min_2022_03, min_2022_04, min_2023_05,
+   min_stay_last)
