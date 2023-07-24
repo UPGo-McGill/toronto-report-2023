@@ -448,30 +448,34 @@ min_stay <-
             min_2021_08, min_2021_09, min_2021_11, min_2021_12, min_2022_01, 
             min_2022_02, min_2022_03, min_2022_04, min_2023_05)
 
-min_stay <- 
+min_stay <-
   min_stay |> 
   summarize(max_date = max(max_date), 
             .by = c(property_ID, start_date, minimum_stay)) |> 
-  pivot_longer(c(start_date, max_date), values_to = "date") |> 
-  mutate(month = yearmonth(date)) |> 
+  group_by(property_ID) |> 
+  reframe(start_date = c(start_date, max(max_date)),
+          minimum_stay = c(minimum_stay, 
+                           minimum_stay[max_date == max(max_date)])) |> 
+  distinct() |> 
+  filter(!is.na(start_date)) |> 
+  mutate(month = yearmonth(start_date)) |> 
   arrange(property_ID, month) |> 
-  select(property_ID, month, minimum_stay, date) |> 
-  summarize(minimum_stay = first(minimum_stay[date == max(date)]),
+  select(property_ID, month, minimum_stay, start_date) |> 
+  summarize(minimum_stay = first(minimum_stay[start_date == max(start_date)]),
             .by = c(property_ID, month)) |> 
   arrange(property_ID, month)
-
-min_stay <- 
-  min_stay |> 
-  filter(month < yearmonth("2023-06-01"))
-  
-qsave(min_stay, "output/data/min_stay.qs", nthreads = availableCores())
-
-min_stay <- qread("output/data/min_stay.qs")
 
 min_stay_last <- 
   min_stay |> 
   filter(month == max(month), .by = property_ID) |> 
   select(property_ID, min_2 = minimum_stay)
+
+min_stay <- 
+  min_stay |> 
+  filter(month < yearmonth("2023-06-01"))
+
+qsave(min_stay, "output/data/min_stay.qs", nthreads = availableCores())
+min_stay <- qread("output/data/min_stay.qs")
 
 monthly <- 
   monthly |> 
@@ -484,6 +488,13 @@ monthly <-
   left_join(min_stay_last, by = "property_ID") |> 
   mutate(minimum_stay = coalesce(minimum_stay, min_2, 1)) |> 
   select(-min_2)
+
+
+# Clean up property fields ------------------------------------------------
+
+property <- 
+  property |> 
+  select(-any_of(c("dwellings", "min_check")))
 
 
 # Save output -------------------------------------------------------------

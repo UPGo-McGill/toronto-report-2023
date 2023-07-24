@@ -139,16 +139,35 @@ property <-
 
 reg_city <-
   read_csv("data/short-term-rental-registrations-data.csv") |> 
-  select(-`_id`, -ward_number) |> 
-  set_names(c("license", "reg_postal", "reg_ward"))
+  select(-`_id`, -ward_number, -unit) |> 
+  set_names(c("license", "reg_address", "reg_postal", "reg_property", 
+              "reg_ward"))
+
+
+# Geocode City data -------------------------------------------------------
+
+arc_output <-
+  reg_city |> 
+  distinct(reg_address) |> 
+  mutate(reg_address = paste0(reg_address, ", Toronto, Canada")) |>
+  tidygeocoder::geocode(address = reg_address, method = "arcgis") |> 
+  select(reg_address, lon = long, lat) |> 
+  mutate(reg_address = str_remove(reg_address, ", Toronto, Canada"))
+
+qsave(arc_output, "output/data/reg_city_geocode.qs")
+arc_output <- qread("output/data/reg_city_geocode.qs")
+
+reg_city <- 
+  reg_city |> 
+  left_join(arc_output, by = "reg_address")
 
 
 # Merge City data with scrape results -------------------------------------
 
 property <- 
   property |> 
-  select(-any_of(c("reg_postal", "reg_ward"))) |> 
-  left_join(reg_city, by = "license") |> 
+  select(-any_of(c("reg_address", "reg_postal", "reg_property", "reg_ward"))) |> 
+  left_join(select(reg_city, -lon, -lat), by = "license") |> 
   relocate(geometry, .after = last_col())
 
 
@@ -196,12 +215,11 @@ property <-
   mutate(license = if_else(exempt, NA_character_, license)) |> 
   mutate(reg_status = case_when(
     is.na(exists) | !exists ~ NA_character_,
-    exempt & minimum_stay >= 30 ~ "LTR EXEMPT",
+    exempt & minimum_stay >= 28 ~ "LTR EXEMPT",
     exempt & !housing ~ "NON-HOUSING EXEMPT",
     exempt ~ "OTHER EXEMPT",
     listing_type == "Hotel room" | str_detect(property_type, "otel") ~ "HOTEL",
-    minimum_stay >= 30 ~ "LTR",
-    is.na(license) & minimum_stay >= 28 ~ "MISSING 28",
+    minimum_stay >= 28 ~ "LTR",
     is.na(license) ~ "MISSING STR",
     !is.na(license) & is.na(reg_postal) ~ "INVALID",
     !is.na(license) ~ "VALID",
