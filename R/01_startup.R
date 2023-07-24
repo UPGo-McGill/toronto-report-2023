@@ -33,6 +33,7 @@ library(ggwaffle)
 # Set global variables ----------------------------------------------------
 
 plan(multisession)
+handlers(global = TRUE)
 col_palette <-
   c("#14325C", "#5398D9", "#F4E3B1", "#D96B0C", "#A53A3B", "#A2E8AF", "#C7C9C9")
 
