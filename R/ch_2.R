@@ -167,8 +167,9 @@ fig_3_1 <-
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = act_per_dwelling), colour = "white") +
   scale_fill_stepsn(colors = col_palette[c(3, 4, 5)], na.value = "grey80",
-                    limits = c(0, 0.02), oob = scales::squish, 
-                    n.breaks = 5, labels = scales::percent) +
+                    limits = c(0, 0.015), oob = scales::squish, 
+                    breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
+                    labels = scales::percent)  +
   gg_bbox(city) +
   guides(fill = guide_coloursteps(title = "STRs/dwelling", title.vjust = 0.8)) +
   theme_void() +
@@ -186,8 +187,9 @@ fig_3_2 <-
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = act_per_dwelling), colour = "transparent") +
   scale_fill_stepsn(colors = col_palette[c(3, 4, 5)], na.value = "grey80",
-                    limits = c(0, 0.02), oob = scales::squish, 
-                    n.breaks = 5, labels = scales::percent)  +
+                    limits = c(0, 0.015), oob = scales::squish, 
+                    breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
+                    labels = scales::percent)  +
   gg_bbox(city) +
   guides(fill = guide_coloursteps(title = "STRs/dwelling", title.vjust = 0.8)) +
   theme_void() +
@@ -215,7 +217,7 @@ table_1 <-
     rev_growth = (rev - rev_2022) / rev_2022,
     .by = ward) |> 
   left_join(WD, by = "ward") |> 
-  filter(active >= 100) |> 
+  filter(active >= 80) |> 
   arrange(-active) |> 
   mutate(active_per_dwelling = active / dwellings) |> 
   select(ward, active, active_growth, active_per_dwelling, rev, rev_growth) |> 
@@ -304,6 +306,13 @@ monthly |>
             top_10 = sum(rev[rev > quantile(rev, c(0.90))] / all),
             top_11 = sum(rev[rev > quantile(rev, c(0.99))] / all))
 
+# ML in May 2023
+monthly |> 
+  filter(minimum_stay < 28, month == yearmonth("2023-05")) |> 
+  summarize(active = sum(R + A), revenue = sum(revenue), .by = multi) |> 
+  summarize(active = active[multi] / sum(active),
+            rev = revenue[multi] / sum(revenue))
+
 
 # Figure 4 ----------------------------------------------------------------
 
@@ -390,5 +399,38 @@ figure_4 <-
         strip.text = element_text(family = "Futura", face = "bold"))
 
 ggsave("output/figure_4.png", plot = figure_4, width = 8, height = 4, 
+       units = "in")
+
+
+# Figure 5 ----------------------------------------------------------------
+
+figure_5 <-
+  monthly |> 
+  filter(minimum_stay < 28, year(month) >= 2017) |> 
+  summarize(active = sum(R + A), revenue = sum(revenue), 
+            .by = c(month, multi)) |> 
+  mutate(active = active / days_in_month(month)) |> 
+  summarize(active = active[multi] / sum(active),
+            rev = revenue[multi] / sum(revenue),
+            .by = month) |> 
+  pivot_longer(c(active, rev)) |> 
+  mutate(label = if_else(month == yearmonth("2018-01-01"), case_when(
+    name == "active" ~ "Active STR listings",
+    name == "rev" ~ "STR revenue"), NA_character_)) |>
+  ggplot(aes(month, value, colour = name)) +
+  geom_line(lwd = 1.5) +
+  geom_label(aes(label = label), alpha = 0.9, family = "Futura", size = 3) +
+  scale_y_continuous(name = NULL, 
+                     label = scales::percent_format(accuracy = 1)) +
+  scale_x_yearmonth(name = NULL) +
+  scale_colour_manual(values = col_palette[c(5, 1)]) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.minor.x = element_blank(),
+        text = element_text(family = "Futura", face = "plain"),
+        legend.title = element_text(family = "Futura", face = "bold"),
+        legend.text = element_text(family = "Futura"))
+
+ggsave("output/figure_5.png", plot = figure_5, width = 8, height = 5, 
        units = "in")
 
