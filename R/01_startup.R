@@ -28,12 +28,21 @@ library(qs)
 library(tsibble)
 # remotes::install_github("liamgilbey/ggwaffle")
 library(ggwaffle)
+library(ggh4x)
+library(feasts)
+library(fable)
 
 
 # Set global variables ----------------------------------------------------
 
 plan(multisession)
 handlers(global = TRUE)
-col_palette <-
-  c("#14325C", "#5398D9", "#F4E3B1", "#D96B0C", "#A53A3B", "#A2E8AF", "#C7C9C9")
+col_palette <- c(
+  "#14325C", # 1
+  "#5398D9", # 2
+  "#F4E3B1", # 3
+  "#D96B0C", # 4 
+  "#A53A3B", # 5 
+  "#A2E8AF", # 6
+  "#C7C9C9") # 7
 

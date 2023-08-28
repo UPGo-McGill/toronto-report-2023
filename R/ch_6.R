@@ -4,8 +4,8 @@ source("R/01_startup.R")
 
 property <- qread("output/data/property.qs", nthreads = availableCores())
 monthly <- qread("output/data/monthly.qs", nthreads = availableCores())
-qload("output/data/geometry.qsm")
-ltr <- qread("output/data/ltr_processed.qs")
+qload("output/data/geometry.qsm", nthreads = availableCores())
+ltr <- qread("output/data/ltr_processed.qs", nthreads = availableCores())
 
 
 # How many properties have moved?  ----------------------------------------
@@ -249,12 +249,15 @@ fig_15_left <-
   WD |> 
   inner_join(count(str_to_ltr, ward), by = "ward") |> 
   ggplot() +
+  geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
+  geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = n), colour = "white") +
   scale_fill_stepsn(name = "Total STR to\nLTR matches",
                     colors = col_palette[c(6, 2)],
                     labels = scales::comma,
                     breaks = c(0, 500, 1000, 1500, 2000),
                     na.value = "grey80") +
+  gg_bbox(city) +
   theme_void() +
   theme(legend.position = "bottom",
         text = element_text(face = "plain", family = "Futura", size = 7),
@@ -270,12 +273,15 @@ fig_15_right <-
       rename(n_total = n), by = "ward") |> 
     mutate(pct = n / n_total) |> 
   ggplot() +
+  geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
+  geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = pct), colour = "white") +
   scale_fill_stepsn(name = "Matches as %\nof active STRs",
                     colors = col_palette[c(3, 4, 1)],
                     breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
                     na.value = "grey80",
                     label = scales::label_percent(accuracy = 1)) +
+  gg_bbox(city) +
   theme_void() +
     theme(legend.position = "bottom",
           text = element_text(face = "plain", family = "Futura", size = 7),

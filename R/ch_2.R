@@ -131,7 +131,7 @@ figure_2 <-
   filter(month >= yearmonth("2018-06-01")) |> 
   select(-active, -rev) |> 
   pivot_longer(cols = c(active_growth, rev_growth)) |> 
-  mutate(label = if_else(month == yearmonth("2020-12-01"), case_when(
+  mutate(label = if_else(month == yearmonth("2022-04-01"), case_when(
     !MTR & name == "active_growth" ~ "Active STR listings",
     MTR & name == "active_growth" ~ "Active MTR listings",
     !MTR & name == "rev_growth" ~ "STR revenue",
@@ -166,7 +166,7 @@ fig_3_1 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = act_per_dwelling), colour = "white") +
-  scale_fill_stepsn(colors = col_palette[c(3, 4, 5)], na.value = "grey80",
+  scale_fill_stepsn(colors = col_palette[c(6, 2, 1)], na.value = "grey80",
                     limits = c(0, 0.015), oob = scales::squish, 
                     breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
                     labels = scales::percent)  +
@@ -186,7 +186,7 @@ fig_3_2 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = act_per_dwelling), colour = "transparent") +
-  scale_fill_stepsn(colors = col_palette[c(3, 4, 5)], na.value = "grey80",
+  scale_fill_stepsn(colors = col_palette[c(6, 2, 1)], na.value = "grey80",
                     limits = c(0, 0.015), oob = scales::squish, 
                     breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
                     labels = scales::percent)  +
