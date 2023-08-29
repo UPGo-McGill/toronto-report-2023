@@ -47,8 +47,16 @@ ltr |>
   count(type) |> 
   mutate(pct = n / sum(n))
 
+# Furnished or not
+ltr |> 
+  st_drop_geometry() |> 
+  filter(!is.na(property_ID), !is.na(furnished)) |> 
+  distinct(id, .keep_all = TRUE) |> 
+  count(furnished) |> 
+  mutate(pct = n / sum(n))
 
-# Figure TK ---------------------------------------------------------------
+
+# Figure 14 ---------------------------------------------------------------
 
 # This figure is copied over from the previous report
 
@@ -147,9 +155,9 @@ switches <-
   pivot_longer(c(ab_first, ltr_first))
 
 
-# Figure TK ---------------------------------------------------------------
+# Figure 15 ---------------------------------------------------------------
 
-fig_13 <- 
+fig_15 <- 
   ltr |> 
   st_drop_geometry() |> 
   unnest(property_ID) |> 
@@ -171,19 +179,19 @@ fig_13 <-
   scale_x_date(name = NULL) +
   scale_y_continuous(name = NULL, label = scales::comma) +
   scale_fill_manual(name = NULL, labels = c("Craigslist", "Kijiji"), 
-                    values = col_palette[c(4, 2)]) +
+                    values = col_palette[c(5, 1)]) +
   theme_minimal() +
   theme(legend.position = "bottom", 
         panel.grid.minor.x = element_blank(),
         text = element_text(family = "Futura"))
 
-ggsave("output/figure_13.png", plot = fig_13, width = 8, height = 5, 
+ggsave("output/figure_15.png", plot = fig_15, width = 8, height = 5, 
        units = "in")
 
 
-# Figure 14 ---------------------------------------------------------------
+# Figure 16 ---------------------------------------------------------------
 
-fig_14 <-
+fig_16 <-
   switches |> 
   arrange(created, name) |> 
   mutate(value = slide_dbl(value, mean, .before = 6), .by = name) |>
@@ -199,12 +207,12 @@ fig_14 <-
   geom_line(lwd = 1) +
   scale_y_continuous(name = NULL, label = scales::percent) +
   scale_x_date(name = NULL) +
-  scale_colour_manual(name = NULL, values = col_palette[c(2, 4)]) +
+  scale_colour_manual(name = NULL, values = col_palette[c(1, 5)]) +
   theme_minimal() +
   theme(legend.position = "none", panel.grid.minor.x = element_blank(),
         text = element_text(family = "Futura"))
 
-ggsave("output/figure_14.png", plot = fig_14, width = 8, height = 5, 
+ggsave("output/figure_16.png", plot = fig_16, width = 8, height = 3, 
        units = "in")
 
 
@@ -243,15 +251,16 @@ str_to_ltr |>
   mutate(pct_ward_2023 = n / n_2023)
 
 
-# Figure TK ---------------------------------------------------------------
+# Figure 17 ---------------------------------------------------------------
 
-fig_15_left <-
+fig_17_left <-
   WD |> 
   inner_join(count(str_to_ltr, ward), by = "ward") |> 
   ggplot() +
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = n), colour = "white") +
+  geom_sf(data = water, fill = "white", colour = "white") +
   scale_fill_stepsn(name = "Total STR to\nLTR matches",
                     colors = col_palette[c(6, 2)],
                     labels = scales::comma,
@@ -263,7 +272,7 @@ fig_15_left <-
         text = element_text(face = "plain", family = "Futura", size = 7),
         legend.title = element_text(face = "bold"))
 
-fig_15_right <-
+fig_17_right <-
   WD |> 
   inner_join(count(str_to_ltr, ward), by = "ward") |> 
   inner_join(
@@ -276,8 +285,9 @@ fig_15_right <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = pct), colour = "white") +
+  geom_sf(data = water, fill = "white", colour = "white") +
   scale_fill_stepsn(name = "Matches as %\nof active STRs",
-                    colors = col_palette[c(3, 4, 1)],
+                    colors = col_palette[c(2, 5)],
                     breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
                     na.value = "grey80",
                     label = scales::label_percent(accuracy = 1)) +
@@ -287,9 +297,9 @@ fig_15_right <-
           text = element_text(face = "plain", family = "Futura", size = 7),
           legend.title = element_text(face = "bold"))
 
-fig_15 <- fig_15_left + fig_15_right
+fig_17 <- fig_17_left + fig_17_right
 
-ggsave("output/figure_15.png", plot = fig_15, width = 8, height = 4.2, 
+ggsave("output/figure_17.png", plot = fig_17, width = 8, height = 4.2, 
        units = "in")
 
 

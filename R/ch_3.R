@@ -6,6 +6,7 @@ property <- qread("output/data/property.qs", nthreads = availableCores())
 monthly <- qread("output/data/monthly.qs", nthreads = availableCores())
 ltr <- qread("output/data/ltr_processed.qs", nthreads = availableCores())
 qload("output/data/geometry.qsm", nthreads = availableCores())
+water <- qread("output/data/water.qs", nthreads = availableCores())
 
 
 # Medium-term rentals on Airbnb and Vrbo ----------------------------------
@@ -117,7 +118,8 @@ fig_8_1 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = active / dwellings), colour = "white") +
-  scale_fill_stepsn(colors = col_palette[c(2, 5)], na.value = "grey80",
+  geom_sf(data = water, fill = "white", colour = "white") +
+  scale_fill_stepsn(colors = col_palette[c(6, 2)], na.value = "grey80",
                     limits = c(0, 0.015), oob = scales::squish, 
                     breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
                     labels = scales::percent)  +
@@ -135,7 +137,8 @@ fig_8_2 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = active_pct), colour = "white") +
-  scale_fill_stepsn(colors = col_palette[c(6, 2)], na.value = "grey80",
+  geom_sf(data = water, fill = "white", colour = "white") +
+  scale_fill_stepsn(colors = col_palette[c(2, 5)], na.value = "grey80",
                     breaks = c(0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8), 
                     labels = scales::percent)  +
   gg_bbox(city) +

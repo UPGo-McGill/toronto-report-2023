@@ -61,6 +61,18 @@ WD <-
   st_intersection(city$geometry)
 
 
+# Water -------------------------------------------------------------------
+
+water <-
+  read_sf("data/lhy_000c16a_e/lhy_000c16a_e.shp") |> 
+  as_tibble() |> 
+  st_as_sf() |> 
+  filter(PRUID == "35") |> 
+  st_transform(32617) |> 
+  st_filter(CMA)
+
+
 # Save output -------------------------------------------------------------
 
 qsavem(city, CMA, DA, WD, file = "output/data/geometry.qsm")
+qsave(water, file = "output/data/water.qs")

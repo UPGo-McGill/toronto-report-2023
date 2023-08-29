@@ -90,9 +90,9 @@ property |>
   )
 
 
-# Figure TK ---------------------------------------------------------------
+# Figure 12 ---------------------------------------------------------------
 
-fig_10 <-
+fig_12 <-
   property |> 
   st_drop_geometry() |> 
   filter(exists) |> 
@@ -117,13 +117,13 @@ fig_10 <-
         legend.title = element_text(family = "Futura", face = "bold"),
         legend.text = element_text(family = "Futura"))
 
-ggsave("output/figure_10.png", plot = fig_10, width = 8, height = 4, 
+ggsave("output/figure_12.png", plot = fig_12, width = 8, height = 4, 
        units = "in")
 
 
-# Figure TK ---------------------------------------------------------------
+# Figure 13 ---------------------------------------------------------------
 
-fig_11 <-
+fig_13 <-
   property |> 
   st_drop_geometry() |> 
   filter(reg_status == "VALID") |> 
@@ -149,11 +149,11 @@ fig_11 <-
         legend.title = element_text(family = "Futura", face = "bold"),
         legend.text = element_text(family = "Futura"))
 
-ggsave("output/figure_11.png", plot = fig_11, width = 8, height = 4, 
+ggsave("output/figure_13.png", plot = fig_13, width = 8, height = 4, 
        units = "in")
 
 
-# Table TK ----------------------------------------------------------------
+# Table 4 ----------------------------------------------------------------
 
 property |> 
   st_drop_geometry() |> 
@@ -166,7 +166,7 @@ property |>
       "Exempt (hotel, etc.)",
     reg_status %in% c("LTR", "LTR EXEMPT") ~ "Exempt (MTR)",
     reg_status == "INVALID" ~ "Invalid license")) |> 
-  anti_join(
+  inner_join(
     monthly |> 
       filter(year(month) == 2023) |> 
       summarize(
@@ -174,9 +174,6 @@ property |>
         n_active = sum(A + R),
         rev = sum(revenue),
         .by = property_ID), by = "property_ID") |> 
-  filter(status == "Exempt (MTR)")
-  count(status)
-  select(property_ID, listing_type, license, status, n_res, n_active, rev) |> 
   summarize(
     n_listings = n(),
     pct_eh = mean(listing_type == "Entire home/apt"),

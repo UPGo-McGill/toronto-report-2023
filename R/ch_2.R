@@ -5,6 +5,7 @@ source("R/01_startup.R")
 property <- qread("output/data/property.qs", nthreads = availableCores())
 monthly <- qread("output/data/monthly.qs", nthreads = availableCores())
 qload("output/data/geometry.qsm")
+water <- qread("output/data/water.qs", nthreads = availableCores())
 
 
 # Active listings and host revenue ----------------------------------------
@@ -166,6 +167,7 @@ fig_3_1 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = act_per_dwelling), colour = "white") +
+  geom_sf(data = water, fill = "white", colour = "white") +
   scale_fill_stepsn(colors = col_palette[c(6, 2, 1)], na.value = "grey80",
                     limits = c(0, 0.015), oob = scales::squish, 
                     breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
@@ -186,6 +188,7 @@ fig_3_2 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = act_per_dwelling), colour = "transparent") +
+  geom_sf(data = water, fill = "white", colour = "white") +
   scale_fill_stepsn(colors = col_palette[c(6, 2, 1)], na.value = "grey80",
                     limits = c(0, 0.015), oob = scales::squish, 
                     breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 

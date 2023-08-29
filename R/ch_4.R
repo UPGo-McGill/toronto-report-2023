@@ -6,6 +6,7 @@ property <- qread("output/data/property.qs", nthreads = availableCores())
 monthly <- qread("output/data/monthly.qs", nthreads = availableCores())
 GH <- qread("output/data/GH.qs", nthreads = availableCores())
 qload("output/data/geometry.qsm")
+water <- qread("output/data/water.qs", nthreads = availableCores())
 
 
 # STR- and MTR-induced housing loss ---------------------------------------
@@ -112,7 +113,7 @@ housing_loss_ward_2022_2023 <-
 fig_9 <-
   housing_loss |> 
   mutate(listing = factor(listing, levels = c(
-    "Ghost hostel STR", "Ghost hostel MTR", "FREH STR", "FREH MTR"))) |> 
+    "Ghost hostel MTR", "FREH MTR", "Ghost hostel STR", "FREH STR"))) |> 
   ggplot(aes(month, value, fill = listing)) +
   geom_col(lwd = 0) +
   scale_fill_manual(name = "Listing type", 
@@ -163,6 +164,7 @@ fig_10_1 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = units / dwellings), colour = "white") +
+  geom_sf(data = water, fill = "white", colour = "white") +
   scale_fill_stepsn(colors = col_palette[c(6, 2, 1)], na.value = "grey90",
                     limits = c(0, 0.016), oob = scales::squish,
                     breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
@@ -181,6 +183,7 @@ fig_10_2 <-
   geom_sf(data = CMA, fill = "grey80", colour = "transparent") +
   geom_sf(data = city, fill = "grey90", colour = "transparent") +
   geom_sf(aes(fill = units / dwellings), colour = "transparent") +
+  geom_sf(data = water, fill = "white", colour = "white") +
   scale_fill_stepsn(colors = col_palette[c(6, 2, 1)], na.value = "grey90",
                     limits = c(0, 0.016), oob = scales::squish,
                     breaks = c(0, 0.003, 0.006, 0.009, 0.012, 0.015), 
