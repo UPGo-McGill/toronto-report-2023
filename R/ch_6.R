@@ -6,6 +6,7 @@ property <- qread("output/data/property.qs", nthreads = availableCores())
 monthly <- qread("output/data/monthly.qs", nthreads = availableCores())
 qload("output/data/geometry.qsm", nthreads = availableCores())
 ltr <- qread("output/data/ltr_processed.qs", nthreads = availableCores())
+water <- qread("output/data/water.qs", nthreads = availableCores())
 
 
 # How many properties have moved?  ----------------------------------------
@@ -421,29 +422,36 @@ asking_rents |>
   mutate(change = (dec - feb) / feb)
 
 
-# Figure TK ---------------------------------------------------------------
+# Figure 18 ---------------------------------------------------------------
 
-fig_16 <- 
+fig_18 <-
   asking_rents |> 
   mutate(avg_price = slide_dbl(avg_price, mean, .before = 13), 
          .by = c(status, geography)) |> 
   filter(created >= "2020-04-01", created <= "2022-12-14") |> 
   filter(status != "Not matched") |> 
+  mutate(label = if_else(
+    created == "2022-01-02" & geography == "City of Toronto", 
+    case_when(
+      status == "All listings" ~ "All listings",
+      status == "Matched to STR" ~ "Matched to STR"), 
+    NA_character_)) |> 
   ggplot(aes(created, avg_price, color = status)) +
   geom_line(lwd = 1) +
+  geom_label(aes(label = label), alpha = 0.9, family = "Futura", size = 3) +
   scale_x_date(name = NULL, limits = c(as.Date("2020-04-01"), NA)) +
   scale_y_continuous(name = NULL, label = scales::dollar) +
-  scale_color_manual(name = NULL, values = col_palette[c(4, 2)]) +
-  facet_wrap(vars(geography)) +
+  scale_color_manual(name = NULL, values = col_palette[c(5, 1)]) +
+  facet_wrap(vars(geography), nrow = 2) +
   theme_minimal() +
-  theme(legend.position = "bottom",
+  theme(legend.position = "none",
         panel.grid.minor.x = element_blank(),
         panel.grid.minor.y = element_blank(),
         text = element_text(family = "Futura"), 
         legend.title = element_text(face = "bold"),
         strip.text = element_text(face = "bold"))
 
-ggsave("output/figure_16.png", plot = fig_16, width = 8, height = 5, 
+ggsave("output/figure_18.png", plot = fig_18, width = 8, height = 5, 
        units = "in")
 
 
@@ -499,9 +507,9 @@ monthly |>
   mutate(pct = rev / rev[ltr_early == "no_ltr"] - 1)
 
 
-# Figure TK ---------------------------------------------------------------
+# Figure 19 ---------------------------------------------------------------
 
-fig_17 <-
+fig_19 <-
   monthly |> 
   left_join(prop_ltr, by = "property_ID") |> 
   filter(year(month) >= 2020) |> 
@@ -510,19 +518,19 @@ fig_17 <-
   summarize(rev = mean(revenue), .by = c(month, ltr_early)) |> 
   mutate(label = if_else(month == yearmonth("2020-08"), case_when(
     ltr_early == "ltr_early" ~ "Switched before Feb. 2021",
-    ltr_early == "ltr_late" ~ "Switched after Feb. 2021",
-    ltr_early == "no_ltr" ~ "Did not' switch"),
+    ltr_early == "ltr_late" ~ "Switched after Feb. 2021"),
     NA_character_)) |>
   ggplot(aes(month, rev, colour = ltr_early)) +
   geom_line(lwd = 1.2) +
   geom_label(aes(label = label), alpha = 0.9, family = "Futura", size = 3) +
   geom_vline(aes(xintercept = as.Date("2021-02-01")), linetype = 3) +
   scale_y_continuous(name = NULL, labels = scales::dollar) +
-  scale_x_yearmonth(name = NULL) +
-  scale_colour_manual(values = col_palette[c(2, 4, 7)]) +
+  scale_x_yearmonth(name = NULL, 
+                    limits = c(as.Date("2020-01-01"), as.Date("2023-01-01"))) +
+  scale_colour_manual(values = col_palette[c(1, 5, 7)]) +
   theme_minimal() +
   theme(legend.position = "none", text = element_text(family = "Futura"))
 
-ggsave("output/figure_17.png", plot = fig_17, width = 8, height = 5, 
+ggsave("output/figure_19.png", plot = fig_19, width = 8, height = 5, 
        units = "in")
 

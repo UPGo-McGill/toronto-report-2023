@@ -117,7 +117,7 @@ fig_9 <-
   ggplot(aes(month, value, fill = listing)) +
   geom_col(lwd = 0) +
   scale_fill_manual(name = "Listing type", 
-                    values = col_palette[c(2, 1, 4, 5)]) +
+                    values = col_palette[c(1, 2, 5, 4)]) +
   scale_x_yearmonth(name = NULL, limits = c(as.Date("2017-07-01"), NA)) +
   scale_y_continuous(name = NULL, label = scales::comma) +
   # facet_wrap(~min_28, scales = "free_y") +
